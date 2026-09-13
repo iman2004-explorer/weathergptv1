@@ -13,6 +13,7 @@ PORT = int(os.getenv("PORT", "8000"))
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 OPEN_METEO_GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search"
+NOMINATIM_GEOCODE_URL = "https://nominatim.openstreetmap.org/search"
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 

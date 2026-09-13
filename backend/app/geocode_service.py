@@ -24,7 +24,7 @@ Strategy:
 import asyncio
 from typing import Optional
 import httpx
-from .config import OPEN_METEO_GEOCODE_URL
+from .config import NOMINATIM_GEOCODE_URL, OPEN_METEO_GEOCODE_URL
 
 
 class LocationResolution:
@@ -67,7 +67,38 @@ async def _raw_search(query: str, count: int = 20) -> list[dict]:
             last_error = exc
             if attempt < 2:
                 await asyncio.sleep(1)
-    raise last_error
+    try:
+        async with httpx.AsyncClient(timeout=20, trust_env=False) as client:
+            resp = await client.get(
+                NOMINATIM_GEOCODE_URL,
+                params={
+                    "q": f"{query}, India",
+                    "format": "jsonv2",
+                    "addressdetails": 1,
+                    "limit": count,
+                },
+                headers={"User-Agent": "WeatherGPT/1.0 weather education project"},
+            )
+            resp.raise_for_status()
+            results = []
+            for item in resp.json():
+                address = item.get("address", {})
+                results.append({
+                    "id": item.get("osm_id"),
+                    "name": address.get("city") or address.get("town") or address.get("village") or item.get("name") or query,
+                    "admin1": address.get("state"),
+                    "admin2": address.get("state_district") or address.get("county"),
+                    "country": address.get("country", "India"),
+                    "country_code": address.get("country_code", "in"),
+                    "latitude": float(item["lat"]),
+                    "longitude": float(item["lon"]),
+                    "population": 0,
+                })
+            return results
+    except httpx.HTTPError:
+        if last_error:
+            raise last_error
+        raise
 
 
 async def resolve_location(

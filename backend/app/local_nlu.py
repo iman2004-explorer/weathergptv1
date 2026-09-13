@@ -12,7 +12,7 @@ import re
 import random
 
 KNOWN_PLACES = [
-    "kolkata", "mumbai", "delhi", "new delhi", "chennai", "bengaluru", "bangalore", "hyderabad",
+    "kolkata", "durgapur", "mumbai", "delhi", "new delhi", "chennai", "bengaluru", "bangalore", "hyderabad",
     "pune", "jaipur", "ahmedabad", "lucknow", "bhopal", "patna", "chandigarh", "guwahati",
     "kochi", "cochin", "thiruvananthapuram", "bhubaneswar", "ranchi", "raipur", "dehradun",
     "shimla", "srinagar", "amritsar", "varanasi", "agra", "nagpur", "indore", "surat",
@@ -58,6 +58,15 @@ def extract_location(text: str):
     for place in KNOWN_PLACES:
         if place in lower:
             return place
+    direct = re.sub(
+        r"\b(weather|forecast|temperature|rain|climate|alerts?|advisories?|in|for|at|near|today|tomorrow|now|please|what|is|the|of|me|give|tell)\b",
+        " ",
+        lower,
+    )
+    direct = re.sub(r"[^a-z\s-]", " ", direct)
+    direct = re.sub(r"\s+", " ", direct).strip()
+    if 2 <= len(direct) <= 40 and len(direct.split()) <= 5:
+        return direct
     return None
 
 
