@@ -22,9 +22,77 @@ Strategy:
    remaining candidates so the frontend can let the user pick the exact one.
 """
 import asyncio
+import unicodedata
 from typing import Optional
 import httpx
 from .config import NOMINATIM_GEOCODE_URL, OPEN_METEO_GEOCODE_URL
+
+WB_ALIASES = {
+    "burdwan": "Purba Bardhaman, West Bengal",
+    "east burdwan": "Purba Bardhaman, West Bengal",
+    "west burdwan": "Paschim Bardhaman, West Bengal",
+    "bengal": "West Bengal",
+    "24 parganas": "West Bengal",
+    "north 24 parganas": "North 24 Parganas, West Bengal",
+    "south 24 parganas": "South 24 Parganas, West Bengal",
+    "midnapore": "Paschim Medinipur, West Bengal",
+    "west midnapore": "Paschim Medinipur, West Bengal",
+    "east midnapore": "Purba Medinipur, West Bengal",
+    "midnapur": "Paschim Medinipur, West Bengal",
+}
+
+WB_DISTRICTS = {
+    "alipurduar", "bankura", "birbhum", "cooch behar", "coochbehar", "dakshin dinajpur",
+    "darjeeling", "hooghly", "howrah", "jalpaiguri", "jhargram", "kalimpong", "kolkata",
+    "maldah", "malda", "murshidabad", "nadia", "north 24 parganas", "south 24 parganas",
+    "paschim bardhaman", "purba bardhaman", "bardhaman", "burdwan", "paschim medinipur",
+    "purba medinipur", "medinipur", "purulia", "siliguri", "uttar dinajpur",
+}
+
+
+def _region_query(query: str) -> str:
+    lowered = query.strip().lower()
+    for alias, region in WB_ALIASES.items():
+        if alias in lowered:
+            return f"{query}, {region}"
+    return query
+
+
+def _fold(value: str) -> str:
+    return "".join(
+        char for char in unicodedata.normalize("NFKD", value or "")
+        if not unicodedata.combining(char)
+    ).lower().strip()
+
+
+async def _nominatim_search(query: str, count: int = 20) -> list[dict]:
+    async with httpx.AsyncClient(timeout=20, trust_env=False) as client:
+        resp = await client.get(
+            NOMINATIM_GEOCODE_URL,
+            params={
+                "q": f"{query}, India",
+                "format": "jsonv2",
+                "addressdetails": 1,
+                "limit": count,
+            },
+            headers={"User-Agent": "WeatherGPT/1.0 weather education project"},
+        )
+        resp.raise_for_status()
+        results = []
+        for item in resp.json():
+            address = item.get("address", {})
+            results.append({
+                "id": item.get("osm_id"),
+                "name": address.get("city") or address.get("town") or address.get("village") or item.get("name") or query,
+                "admin1": address.get("state"),
+                "admin2": address.get("state_district") or address.get("county"),
+                "country": address.get("country", "India"),
+                "country_code": address.get("country_code", "in"),
+                "latitude": float(item["lat"]),
+                "longitude": float(item["lon"]),
+                "population": 0,
+            })
+        return results
 
 
 class LocationResolution:
@@ -67,7 +135,8 @@ def _display_with_original_query(candidate: dict, query: str) -> dict:
 
 
 async def _raw_search(query: str, count: int = 20) -> list[dict]:
-    params = {"name": query, "count": count, "language": "en", "format": "json"}
+    search_query = _region_query(query)
+    params = {"name": search_query, "count": count, "language": "en", "format": "json"}
     last_error = None
     for attempt in range(3):
         try:
@@ -85,7 +154,7 @@ async def _raw_search(query: str, count: int = 20) -> list[dict]:
             resp = await client.get(
                 NOMINATIM_GEOCODE_URL,
                 params={
-                    "q": f"{query}, India",
+                    "q": f"{search_query}, India",
                     "format": "jsonv2",
                     "addressdetails": 1,
                     "limit": count,
@@ -124,6 +193,11 @@ async def resolve_location(
         return LocationResolution("not_found", message="No location text provided.")
 
     results = await _raw_search(query)
+    # Village names often have weak or missing Open-Meteo matches. A second
+    # region-aware OSM search gives the whole of West Bengal, including small
+    # settlements, a real coordinate without a hard-coded village database.
+    if not results:
+        results = await _nominatim_search(_region_query(query), count=20)
     if not results:
         return LocationResolution("not_found", message=f'No place found matching "{query}".')
 
@@ -148,13 +222,23 @@ async def resolve_location(
 
     # Keep only candidates whose name actually matches what the user typed
     # (Open-Meteo sometimes returns loosely related results).
-    q_lower = query.lower()
-    exact_name_matches = [c for c in candidates if c["name"] and c["name"].lower() == q_lower]
-    pool = exact_name_matches if exact_name_matches else candidates
+    q_lower = _fold(query)
+    preferred_candidates = candidates
+    if q_lower in WB_DISTRICTS:
+        preferred_candidates = [c for c in candidates if c["state"] and "west bengal" in c["state"].lower()] or candidates
+    exact_name_matches = [c for c in preferred_candidates if c["name"] and _fold(c["name"]) == q_lower]
+    pool = exact_name_matches if exact_name_matches else preferred_candidates
 
     if state:
         state_lower = state.lower()
         pool = [c for c in pool if c["state"] and state_lower in c["state"].lower()] or pool
+    elif _fold(query) in WB_DISTRICTS:
+        west_bengal_pool = [c for c in pool if c["state"] and "west bengal" in c["state"].lower()]
+        if west_bengal_pool:
+            pool = west_bengal_pool
+
+    if _fold(query) in WB_DISTRICTS and len(pool) > 1:
+        pool = [max(pool, key=lambda c: (c.get("population") or 0, bool(c.get("district"))))]
 
     if district:
         district_lower = district.lower()
