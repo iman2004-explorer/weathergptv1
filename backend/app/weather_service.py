@@ -4,6 +4,7 @@ Ported from the original prototype's client-side JS so the logic now lives
 safely on the backend and is shared by both the chat tool and the plain
 REST endpoint.
 """
+import asyncio
 import httpx
 from .config import OPEN_METEO_FORECAST_URL
 
@@ -43,10 +44,20 @@ async def fetch_forecast(lat: float, lon: float) -> dict:
         "timezone": "auto",
         "forecast_days": 7,
     }
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(OPEN_METEO_FORECAST_URL, params=params)
-        resp.raise_for_status()
-        data = resp.json()
+    last_error = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=20, trust_env=False) as client:
+                resp = await client.get(OPEN_METEO_FORECAST_URL, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+                break
+        except httpx.HTTPError as exc:
+            last_error = exc
+            if attempt < 2:
+                await asyncio.sleep(1)
+    else:
+        raise last_error
 
     daily = data["daily"]
     days = []

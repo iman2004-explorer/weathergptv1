@@ -21,6 +21,7 @@ Strategy:
    e.g. same name twice in one district), we just return the full list of
    remaining candidates so the frontend can let the user pick the exact one.
 """
+import asyncio
 from typing import Optional
 import httpx
 from .config import OPEN_METEO_GEOCODE_URL
@@ -53,14 +54,20 @@ def _candidate(r: dict) -> dict:
 
 
 async def _raw_search(query: str, count: int = 20) -> list[dict]:
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(
-            OPEN_METEO_GEOCODE_URL,
-            params={"name": query, "count": count, "language": "en", "format": "json"},
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("results") or []
+    params = {"name": query, "count": count, "language": "en", "format": "json"}
+    last_error = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=20, trust_env=False) as client:
+                resp = await client.get(OPEN_METEO_GEOCODE_URL, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+                return data.get("results") or []
+        except httpx.HTTPError as exc:
+            last_error = exc
+            if attempt < 2:
+                await asyncio.sleep(1)
+    raise last_error
 
 
 async def resolve_location(
