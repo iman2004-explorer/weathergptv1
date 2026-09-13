@@ -68,30 +68,33 @@ def compute_health_advice(forecast: dict, aqi: dict | None, language: str) -> di
     concerns = []
     tips = []
     if current["temp"] >= 38 or today["temp_max"] >= 40:
-        concerns.append("Heat stress and dehydration risk may be elevated.")
-        tips.append("Drink water regularly, limit midday exertion, and take breaks in shade or indoors.")
+        concerns.append("Possible heat-related symptoms: heavy sweating, headache, dizziness, weakness, cramps, or dehydration.")
+        tips.append("Drink water regularly, limit midday exertion, and take breaks in shade or indoors. Seek urgent help for confusion, fainting, or very hot dry skin.")
     if current["temp"] <= 8 or today["temp_min"] <= 5:
-        concerns.append("Cold exposure may worsen discomfort for vulnerable people.")
+        concerns.append("Cold exposure may contribute to shivering, worsening joint discomfort, cough, or breathing difficulty in vulnerable people.")
         tips.append("Keep warm, especially overnight, and check on older adults, infants, and people with chronic illness.")
     if today["uv_max"] >= 8:
-        concerns.append("High UV exposure can cause sunburn and eye or skin damage.")
+        concerns.append("High UV exposure can cause sunburn, eye irritation, and skin damage.")
         tips.append("Use shade, protective clothing, sunglasses, and sunscreen when outdoors.")
     if today["wind_max"] >= 40:
-        concerns.append("Strong winds can increase dust exposure and aggravate breathing problems.")
-        tips.append("Avoid dusty outdoor areas and keep prescribed respiratory medicine available.")
+        concerns.append("Strong winds can increase dust exposure, causing sneezing, cough, throat irritation, or breathing discomfort.")
+        tips.append("Avoid dusty outdoor areas, close windows during dust, and keep prescribed respiratory medicine available.")
     if today["precip_prob"] >= 70 or current["humidity"] >= 85:
-        concerns.append("Wet or very humid conditions may increase discomfort and slip or mould exposure.")
-        tips.append("Wear suitable footwear, keep rooms ventilated, and avoid prolonged damp clothing.")
+        concerns.append("Rainy and humid conditions may increase cough, sneezing, throat irritation, mould exposure, and seasonal viral illness risk.")
+        tips.append("Keep rooms ventilated and dry, avoid prolonged damp clothing, wash hands regularly, and avoid close contact when fever or respiratory symptoms appear.")
     if aqi and aqi.get("value", 0) > 100:
-        concerns.append(f"Air pollution is elevated (AQI {aqi['value']}, {aqi['category']}).")
-        tips.append("Reduce prolonged outdoor exertion, avoid heavy traffic areas, and use a well-fitted mask if needed.")
+        concerns.append(f"Air pollution is elevated (AQI {aqi['value']}, {aqi['category']}): cough, sneezing, throat irritation, wheezing, or breathing discomfort may worsen.")
+        tips.append("Reduce prolonged outdoor exertion, avoid heavy-traffic areas, keep indoor air clean, and use a well-fitted mask if needed.")
+    if aqi and aqi.get("value", 0) > 200:
+        concerns.append("Very poor air may aggravate asthma, COPD, heart disease, and other breathing or cardiovascular conditions.")
+        tips.append("Prefer indoor activity, keep windows closed during pollution peaks, and follow your clinician's action plan.")
     if not concerns:
         concerns.append("No major weather-related health stress signal is detected right now.")
         tips.append("Stay hydrated, sleep well, eat regularly, and use normal sun and weather protection outdoors.")
     return {
         "concerns": concerns,
         "tips": tips,
-        "disclaimer": "General prevention guidance, not a medical diagnosis. Seek professional care for severe or persistent symptoms.",
+        "disclaimer": "These are weather-related risk signals, not a diagnosis. Weather cannot confirm the cause of cough, sneezing, sore throat, choking, fever, or breathing problems. Seek medical care for persistent fever, chest pain, choking, blue lips, confusion, or difficulty breathing.",
         "standard": "Weather and AQI-based public-health guidance",
     }
 
