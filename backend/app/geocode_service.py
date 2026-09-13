@@ -129,6 +129,23 @@ async def resolve_location(
 
     candidates = [_candidate(r) for r in results]
 
+    # Geocoders can return duplicate records for the same visible place
+    # (Darjeeling is commonly returned twice with nearly identical points).
+    # Keep the most useful record instead of asking the user to choose between
+    # indistinguishable options.
+    unique_candidates = {}
+    for candidate in candidates:
+        key = (
+            (candidate.get("name") or "").strip().lower(),
+            (candidate.get("district") or "").strip().lower(),
+            (candidate.get("state") or "").strip().lower(),
+            (candidate.get("country") or "").strip().lower(),
+        )
+        previous = unique_candidates.get(key)
+        if previous is None or (candidate.get("population") or 0) > (previous.get("population") or 0):
+            unique_candidates[key] = candidate
+    candidates = list(unique_candidates.values())
+
     # Keep only candidates whose name actually matches what the user typed
     # (Open-Meteo sometimes returns loosely related results).
     q_lower = query.lower()
