@@ -227,6 +227,10 @@ function renderFarmerPanel(weatherData){
 
 /* ---------------- Backend calls ---------------- */
 async function callChat(text){
+  if(/\b(weather|forecast|rain|temperature|alerts?|advisories?)\b/i.test(text) &&
+     /\b(in|for|at|near)\b/i.test(text)){
+    messages = [];
+  }
   messages.push({ role: "user", content: text });
   const res = await fetch(`${API_BASE_URL}/api/chat`, {
     method: "POST",
