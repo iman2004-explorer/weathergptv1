@@ -1,0 +1,13 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+httpx==0.27.2
+python-dotenv==1.0.1
+# The 2.9.x core package has no Python 3.14 wheel and falls back to a
+# native build on Windows.  Current 2.x releases provide a compatible wheel.
+pydantic>=2.12,<3
+scikit-learn==1.8.0
+numpy>=2.0
+# pandas 2.2.x does not provide wheels for Python 3.14, which makes a
+# default VS Code/Python 3.14 setup fail during installation on Windows.
+pandas>=3.0,<3.1
+joblib==1.5.3

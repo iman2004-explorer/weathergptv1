@@ -1,0 +1,20 @@
+{
+  "features": [
+    "month",
+    "latitude",
+    "temp_max",
+    "temp_min",
+    "humidity",
+    "precip_prob",
+    "wind_max",
+    "uv_max"
+  ],
+  "labels": [
+    "low",
+    "moderate",
+    "high",
+    "severe"
+  ],
+  "trained_on": "synthetic-domain-rules-v1",
+  "n_samples": 30000
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeatherGPT — Conversational Weather Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>Weather<span>GPT</span></h1>
+      <p id="tagline">Conversational weather intelligence — ask about forecasts, alerts, or climate in plain language.</p>
+    </div>
+    <div class="header-controls">
+      <div class="seg" id="langSeg">
+        <button data-lang="en" class="active">EN</button>
+        <button data-lang="hi">हिं</button>
+        <button data-lang="bn">বাং</button>
+      </div>
+      <div class="status-badge"><span class="status-dot" id="statusDot"></span><span id="statusText">idle</span></div>
+      <div class="status-badge"><span class="status-dot" id="engineDot" style="background:var(--amber)"></span><span id="engineText">engine: —</span></div>
+      <div class="status-badge"><span class="status-dot" id="riskDot" style="background:var(--teal)"></span><span id="riskText">risk index: —</span></div>
+    </div>
+  </header>
+
+  <div id="advisoryBanner">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E8604C" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86l-8.18 14.18A2 2 0 0 0 3.82 21h16.36a2 2 0 0 0 1.71-2.96L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+    <div class="adv-body">
+      <div class="adv-title" id="advisoryTitle"></div>
+      <div id="advisoryText"></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Chat -->
+    <div class="panel chat-col">
+      <div class="chat-log" id="chatLog"></div>
+
+      <!-- Location disambiguation chips (state -> district) appear here when needed -->
+      <div class="disambig" id="disambig" style="display:none;">
+        <div class="disambig-label" id="disambigLabel"></div>
+        <div class="disambig-chips" id="disambigChips"></div>
+      </div>
+
+      <div class="chips" id="chips">
+        <button class="chip" data-q="What's the weather in Kolkata right now?">Weather in Kolkata now</button>
+        <button class="chip" data-q="Will it rain in Mumbai tomorrow?">Rain in Mumbai tomorrow?</button>
+        <button class="chip" data-q="Give me a 7 day forecast for Delhi">7-day forecast, Delhi</button>
+        <button class="chip" data-q="Any weather alerts for Chennai this week?">Alerts near Chennai</button>
+        <button class="chip" data-q="What crop should I plant in Kolkata right now, and how should I care for it?">Farming advice for Kolkata</button>
+      </div>
+      <div class="chat-input">
+        <input id="userInput" type="text" placeholder="Ask about weather, forecasts, or climate…" autocomplete="off">
+        <button id="sendBtn">Ask</button>
+      </div>
+    </div>
+
+    <!-- Instrument panel -->
+    <div class="panel instrument">
+      <h2>Live Readout</h2>
+      <div id="panelContent">
+        <div class="placeholder-panel">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9AA3BC" stroke-width="1.4"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h.79a4.5 4.5 0 1 1 0 9z"/></svg>
+          <div>Ask WeatherGPT about a place — live conditions, a 7-day trace, and any active advisories will appear here.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel farmer-panel" id="farmerPanel">
+    <div class="farmer-head">
+      <h2>🌾 Farmer Advisory</h2>
+      <span class="farmer-sub" id="farmerSub"></span>
+    </div>
+    <div id="farmerContent">
+      <div class="placeholder-panel" id="farmerPlaceholder">
+        <div>Ask about weather for your area and this section will show what to plant right now and how to care for it, based on the season and live conditions there.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>WeatherGPT · live data via Open-Meteo · AI via Claude · ML risk index trained on scikit-learn</footer>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
