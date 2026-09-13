@@ -30,6 +30,15 @@ function fmtDay(dateStr, idx){
   return d.toLocaleDateString(locale, { weekday:'short' });
 }
 
+function weatherScene(code){
+  if([95,96,99].includes(code)) return {kind:'storm', particles:'<i></i><i></i><i></i>', label:'Thunderstorm'};
+  if([71,73,75,77,85,86].includes(code)) return {kind:'snow', particles:'<i></i><i></i><i></i><i></i><i></i>', label:'Snow'};
+  if([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code)) return {kind:'rain', particles:'<i></i><i></i><i></i><i></i><i></i><i></i>', label:'Rain'};
+  if([45,48].includes(code)) return {kind:'fog', particles:'<i></i><i></i><i></i>', label:'Fog'};
+  if([1,2,3].includes(code)) return {kind:'cloudy', particles:'', label:'Cloudy'};
+  return {kind:'clear', particles:'', label:'Clear'};
+}
+
 /* ---------------- Chat log rendering ---------------- */
 function appendMessage(role, text, isError=false){
   const log = document.getElementById('chatLog');
@@ -106,6 +115,7 @@ function renderPanel(weatherData){
   const c = weatherData.current;
   const today = weatherData.days[0];
   const advisories = weatherData.advisories || [];
+  const scene = weatherScene(c.weather_code);
 
   const temps = weatherData.days.map(d=>d.temp_max);
   const min = Math.min(...temps), max = Math.max(...temps);
@@ -136,6 +146,10 @@ function renderPanel(weatherData){
     <div class="place-row">
       <div><div class="place-name">${weatherData.place}</div></div>
       <div class="place-time">${c.weather_label}</div>
+    </div>
+    <div class="current-scene ${scene.kind}" aria-label="Current weather: ${c.weather_label}">
+      <div class="scene-sky"><span class="scene-sun"></span><span class="scene-cloud"></span><span class="scene-particles">${scene.particles}</span><span class="scene-bolt"></span></div>
+      <div class="scene-caption"><strong>${c.weather_label}</strong><span>Current conditions in ${weatherData.place}</span></div>
     </div>
     <div class="reading-strip">
       <div class="reading"><div class="val">${c.temp}°</div><div class="lbl">${language==='hi'?'तापमान':'temp'}</div></div>

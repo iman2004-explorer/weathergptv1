@@ -133,6 +133,24 @@
   .place-row .place-name{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:600;}
   .place-row .place-time{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);}
 
+  .current-scene{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:linear-gradient(110deg,rgba(79,182,199,.12),rgba(232,163,61,.08));overflow:hidden;}
+  .scene-sky{position:relative;flex:0 0 112px;height:58px;overflow:hidden;border-radius:6px;background:linear-gradient(180deg,#23345a,#17213c);}
+  .scene-sun{position:absolute;width:28px;height:28px;top:12px;left:16px;border-radius:50%;background:var(--amber);box-shadow:0 0 18px rgba(232,163,61,.65);animation:sunPulse 3s ease-in-out infinite;}
+  .scene-cloud{position:absolute;width:54px;height:18px;right:10px;top:24px;border-radius:20px;background:#aab5d1;box-shadow:-12px -7px 0 -2px #aab5d1;}
+  .scene-particles i{position:absolute;display:block;top:-10px;width:2px;height:12px;background:#68d0e0;animation:precipitate 1s linear infinite;}
+  .scene-particles i:nth-child(1){left:16px;animation-delay:-.7s}.scene-particles i:nth-child(2){left:32px;animation-delay:-.2s}.scene-particles i:nth-child(3){left:49px;animation-delay:-.9s}.scene-particles i:nth-child(4){left:66px;animation-delay:-.4s}.scene-particles i:nth-child(5){left:83px;animation-delay:-.1s}.scene-particles i:nth-child(6){left:98px;animation-delay:-.6s}
+  .current-scene.snow .scene-particles i{width:5px;height:5px;border-radius:50%;background:#f1f5ff;animation-name:snowfall;}
+  .current-scene.fog .scene-sun,.current-scene.fog .scene-cloud{display:none}
+  .current-scene.fog .scene-sky:after,.current-scene.fog .scene-sky:before{content:'';position:absolute;left:-20px;right:-20px;height:8px;border-radius:10px;background:#b7c1d8aa;animation:fogMove 3s ease-in-out infinite;top:20px}.current-scene.fog .scene-sky:before{top:36px;animation-delay:-1.5s}
+  .current-scene.storm .scene-sun{display:none}.current-scene.storm .scene-cloud{background:#63708f;box-shadow:-12px -7px 0 -2px #63708f;}
+  .scene-bolt{display:none}.current-scene.storm .scene-bolt{display:block;position:absolute;left:56px;top:30px;width:0;height:0;border-left:6px solid transparent;border-right:3px solid transparent;border-top:17px solid #ffe27a;transform:skew(-12deg);animation:boltFlash 1.8s infinite;}
+  .scene-caption{display:flex;flex-direction:column;gap:4px;min-width:0}.scene-caption strong{font-family:'Space Grotesk',sans-serif;font-size:15px}.scene-caption span{color:var(--text-dim);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  @keyframes precipitate{0%{transform:translateY(-8px);opacity:0}20%{opacity:1}100%{transform:translateY(68px);opacity:0}}
+  @keyframes snowfall{0%{transform:translate(0,-8px);opacity:0}20%{opacity:1}100%{transform:translate(10px,68px);opacity:0}}
+  @keyframes sunPulse{50%{transform:scale(1.08);box-shadow:0 0 24px rgba(232,163,61,.8)}}
+  @keyframes fogMove{50%{transform:translateX(18px)}}
+  @keyframes boltFlash{0%,45%,55%,100%{opacity:0}50%{opacity:1}}
+
   .reading-strip{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:16px;}
   .reading{flex:1;padding:12px 8px;text-align:center;border-right:1px solid var(--line);}
   .reading:last-child{border-right:none;}
