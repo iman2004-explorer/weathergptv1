@@ -149,7 +149,7 @@ function renderPanel(weatherData){
     </div>
     <div class="current-scene ${scene.kind}" aria-label="Current weather: ${c.weather_label}">
       <div class="scene-sky"><span class="scene-sun"></span><span class="scene-cloud"></span><span class="scene-particles">${scene.particles}</span><span class="scene-bolt"></span></div>
-      <div class="scene-caption"><strong>${c.weather_label}</strong><span>Current conditions in ${weatherData.place}</span></div>
+      <div class="scene-caption"><strong>${c.weather_label}</strong><span>Current conditions in ${weatherData.place}</span><em>${weatherData.data_source || 'live · Open-Meteo'}</em></div>
     </div>
     <div class="reading-strip">
       <div class="reading"><div class="val">${c.temp}°</div><div class="lbl">${language==='hi'?'तापमान':'temp'}</div></div>
@@ -190,8 +190,9 @@ function renderPanel(weatherData){
   renderFarmerPanel(weatherData);
 
   // status + risk badges
-  document.getElementById('statusDot').classList.remove('sample');
-  document.getElementById('statusText').textContent = strings[language].live;
+  const isFallback = Boolean(weatherData.data_source && weatherData.data_source.toLowerCase().includes('fallback'));
+  document.getElementById('statusDot').classList.toggle('sample', isFallback);
+  document.getElementById('statusText').textContent = weatherData.data_source || strings[language].live;
 
   const risk = weatherData.risk_index;
   const dot = document.getElementById('riskDot');

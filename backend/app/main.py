@@ -192,6 +192,7 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
     )
     return {
         "place": location_obj["display_name"],
+        "data_source": "live · Open-Meteo",
         "state": location_obj.get("state"),
         "district": location_obj.get("district"),
         "current": forecast["current"],
