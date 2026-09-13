@@ -150,19 +150,55 @@ async def fetch_forecast(lat: float, lon: float) -> dict:
 
 
 def classify_aqi(value: float) -> dict:
-    """Classify the US AQI scale with concise public-health language."""
+    """Classify the CPCB India AQI scale."""
     aqi = round(float(value))
     if aqi <= 50:
-        return {"value": aqi, "category": "Healthy", "level": "healthy", "color": "#35C48D", "advice": "Air quality is good for normal outdoor activity."}
+        return {"value": aqi, "category": "Good", "level": "healthy", "color": "#35C48D", "advice": "Air quality is good for normal outdoor activity."}
     if aqi <= 100:
-        return {"value": aqi, "category": "Moderate", "level": "moderate", "color": "#E8C547", "advice": "Most people can enjoy outdoor activity; unusually sensitive people should take care."}
-    if aqi <= 150:
-        return {"value": aqi, "category": "Poor", "level": "poor", "color": "#F29A38", "advice": "Sensitive groups should reduce prolonged or heavy outdoor exertion."}
+        return {"value": aqi, "category": "Satisfactory", "level": "moderate", "color": "#E8C547", "advice": "Air is generally acceptable; unusually sensitive people should take care."}
     if aqi <= 200:
-        return {"value": aqi, "category": "Poor", "level": "poor", "color": "#E8604C", "advice": "Consider reducing prolonged outdoor exertion, especially for sensitive groups."}
+        return {"value": aqi, "category": "Moderate", "level": "moderate", "color": "#F29A38", "advice": "Sensitive people may experience discomfort during prolonged outdoor activity."}
     if aqi <= 300:
+        return {"value": aqi, "category": "Poor", "level": "poor", "color": "#E8604C", "advice": "Reduce prolonged outdoor exertion, especially for sensitive groups."}
+    if aqi <= 400:
         return {"value": aqi, "category": "Very Poor", "level": "very-poor", "color": "#A85BC7", "advice": "Avoid prolonged outdoor exertion; sensitive groups should stay indoors where possible."}
-    return {"value": aqi, "category": "Severe", "level": "severe", "color": "#8F294A", "advice": "Avoid outdoor activity and keep windows closed when practical."}
+    return {"value": min(aqi, 500), "category": "Severe", "level": "severe", "color": "#8F294A", "advice": "Avoid outdoor activity and keep windows closed when practical."}
+
+
+def _cpcb_subindex(value: float, breakpoints: list[tuple[float, float, int, int]]) -> float | None:
+    if value is None:
+        return None
+    concentration = float(value)
+    for low, high, index_low, index_high in breakpoints:
+        if low <= concentration <= high:
+            return index_low + (index_high - index_low) * (concentration - low) / (high - low)
+    if concentration > breakpoints[-1][1]:
+        return 500.0
+    return 0.0
+
+
+def cpcb_aqi(pollutants: dict) -> dict:
+    """Calculate India AQI from hourly Open-Meteo pollutant concentrations."""
+    bands = {
+        "pm2_5": [(0, 30, 0, 50), (30, 60, 51, 100), (60, 90, 101, 200), (90, 120, 201, 300), (120, 250, 301, 400)],
+        "pm10": [(0, 50, 0, 50), (50, 100, 51, 100), (100, 250, 101, 200), (250, 350, 201, 300), (350, 430, 301, 400)],
+        "nitrogen_dioxide": [(0, 40, 0, 50), (40, 80, 51, 100), (80, 180, 101, 200), (180, 280, 201, 300), (280, 400, 301, 400)],
+        "sulphur_dioxide": [(0, 40, 0, 50), (40, 80, 51, 100), (80, 380, 101, 200), (380, 800, 201, 300), (800, 1600, 301, 400)],
+        "ozone": [(0, 50, 0, 50), (50, 100, 51, 100), (100, 168, 101, 200), (168, 208, 201, 300), (208, 748, 301, 400)],
+        "carbon_monoxide": [(0, 1, 0, 50), (1, 2, 51, 100), (2, 10, 101, 200), (10, 17, 201, 300), (17, 34, 301, 400)],
+    }
+    subindices = {}
+    for pollutant, limits in bands.items():
+        value = pollutants.get(pollutant)
+        if pollutant == "carbon_monoxide" and value is not None:
+            value = float(value) / 1000
+        subindex = _cpcb_subindex(value, limits)
+        if subindex is not None:
+            subindices[pollutant] = round(subindex, 1)
+    dominant = max(subindices, key=subindices.get) if subindices else None
+    result = classify_aqi(max(subindices.values()) if subindices else 0)
+    result.update({"standard": "CPCB India AQI", "dominant_pollutant": dominant, "subindices": subindices})
+    return result
 
 
 async def fetch_aqi(lat: float, lon: float) -> dict:
@@ -179,8 +215,9 @@ async def fetch_aqi(lat: float, lon: float) -> dict:
     value = current.get("us_aqi")
     if value is None:
         raise ValueError("AQI value was not returned")
-    result = classify_aqi(value)
+    result = cpcb_aqi(current)
     result.update({
+        "us_aqi": round(float(value)),
         "pm2_5": current.get("pm2_5"),
         "pm10": current.get("pm10"),
         "ozone": current.get("ozone"),

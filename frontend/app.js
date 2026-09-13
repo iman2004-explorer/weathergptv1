@@ -122,7 +122,7 @@ function renderPanel(weatherData){
       <div class="aqi-heading"><span class="aqi-dot"></span><span>Air Quality Index</span><strong>${aqi.value}</strong></div>
       <div class="aqi-category">${aqi.category}</div>
       <div class="aqi-advice">${aqi.advice}</div>
-      <div class="aqi-pollutants">PM2.5 ${aqi.pm2_5 ?? '—'} · PM10 ${aqi.pm10 ?? '—'} · ${aqi.source}</div>
+      <div class="aqi-pollutants">${aqi.standard || 'India AQI'} · PM2.5 ${aqi.pm2_5 ?? '—'} · PM10 ${aqi.pm10 ?? '—'} · provider US AQI ${aqi.us_aqi ?? '—'}</div>
     </div>` : `
     <div class="aqi-card aqi-unavailable"><div class="aqi-heading"><span class="aqi-dot"></span><span>Air Quality Index</span><strong>—</strong></div><div class="aqi-advice">AQI data is temporarily unavailable.</div></div>`;
 
