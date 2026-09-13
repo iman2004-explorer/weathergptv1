@@ -54,9 +54,10 @@ def _wttr_code(description: str) -> int:
     return 0
 
 
-async def fetch_wttr_forecast(place: str) -> dict:
+async def fetch_wttr_forecast(place: str, latitude: float | None = None, longitude: float | None = None) -> dict:
     """Real provider fallback for hosts where Open-Meteo is unreachable."""
-    url = f"https://wttr.in/{quote(place)}?format=j1"
+    target = f"{latitude},{longitude}" if latitude is not None and longitude is not None else place
+    url = f"https://wttr.in/{quote(target)}?format=j1"
     async with httpx.AsyncClient(timeout=25, trust_env=False, headers={"User-Agent": "WeatherGPT/1.0"}) as client:
         response = await client.get(url)
         response.raise_for_status()

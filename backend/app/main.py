@@ -186,7 +186,11 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
         source = "live · Open-Meteo"
     except Exception:
         logger.exception("Open-Meteo failed for %s; trying wttr.in", location_obj.get("display_name"))
-        forecast = await fetch_wttr_forecast(location_obj.get("display_name") or "India")
+        forecast = await fetch_wttr_forecast(
+            location_obj.get("display_name") or "India",
+            latitude=location_obj.get("latitude"),
+            longitude=location_obj.get("longitude"),
+        )
         source = "live · wttr.in fallback"
     advisories = compute_advisories(forecast)
     crop = compute_crop_advisory(forecast, language)
