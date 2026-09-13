@@ -103,10 +103,30 @@ async def handle_local_chat(messages: list, language: str) -> dict:
         intent = local_nlu.classify_intent(user_text)
         loc_text = local_nlu.extract_location(user_text)
         needs_location = not intent.startswith("climate:") and intent not in ("greeting", "thanks")
+        if needs_location and len(messages) >= 3:
+            previous_assistant = next(
+                (m.get("content", "") for m in reversed(messages[:-1]) if m.get("role") == "assistant"),
+                "",
+            )
+            previous_user = next(
+                (m.get("content", "") for m in reversed(messages[:-1]) if m.get("role") == "user"),
+                "",
+            )
+            is_confirmation = (
+                isinstance(previous_assistant, str)
+                and ("which state" in previous_assistant.lower() or "which district" in previous_assistant.lower())
+            )
+            original_location = local_nlu.extract_location(previous_user) if isinstance(previous_user, str) else None
+            if is_confirmation and original_location:
+                resolution = await resolve_location(original_location, state=user_text)
+                intent = "current"
+                loc_text = original_location
         if needs_location:
-            if not loc_text and last_location:
+            if resolution is not None:
+                pass
+            elif not loc_text and last_location:
                 loc_text = last_location.get("query")
-            if loc_text:
+            if resolution is None and loc_text:
                 resolution = await resolve_location(loc_text)
 
     if resolution is not None:
@@ -170,6 +190,8 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
 def fallback_location(query: str) -> dict:
     known = {
         "kolkata": (22.57, 88.36, "Kolkata, West Bengal, India"),
+        "durgapur": (23.52, 87.31, "Durgapur, West Bengal, India"),
+        "durgapur west bengal": (23.52, 87.31, "Durgapur, West Bengal, India"),
         "mumbai": (19.08, 72.88, "Mumbai, Maharashtra, India"),
         "delhi": (28.61, 77.21, "Delhi, India"),
         "new delhi": (28.61, 77.21, "New Delhi, India"),
@@ -183,7 +205,7 @@ def fallback_location(query: str) -> dict:
         "dubai": (25.20, 55.27, "Dubai, United Arab Emirates"),
     }
     key = (query or "").strip().lower()
-    lat, lon, display_name = known.get(key, (20.59, 78.96, query or "India"))
+    lat, lon, display_name = known.get(key, (20.59, 78.96, (query or "India").title()))
     return {"latitude": lat, "longitude": lon, "display_name": display_name, "state": None, "district": None}
 
 
