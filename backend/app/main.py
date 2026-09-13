@@ -115,6 +115,11 @@ async def handle_local_chat(messages: list, language: str) -> dict:
             is_confirmation = (
                 isinstance(previous_assistant, str)
                 and ("which state" in previous_assistant.lower() or "which district" in previous_assistant.lower())
+                and isinstance(user_text, str)
+                and len(user_text.split()) <= 5
+                and not any(word in user_text.lower().split() for word in [
+                    "weather", "forecast", "rain", "temperature", "climate", "in", "for", "what", "how", "will"
+                ])
             )
             original_location = local_nlu.extract_location(previous_user) if isinstance(previous_user, str) else None
             if is_confirmation and original_location:
