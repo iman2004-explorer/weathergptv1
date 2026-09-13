@@ -62,6 +62,40 @@ def localize_advisories(advisories: list, language: str) -> list:
     ]
 
 
+def compute_health_advice(forecast: dict, aqi: dict | None, language: str) -> dict:
+    current = forecast["current"]
+    today = forecast["days"][0]
+    concerns = []
+    tips = []
+    if current["temp"] >= 38 or today["temp_max"] >= 40:
+        concerns.append("Heat stress and dehydration risk may be elevated.")
+        tips.append("Drink water regularly, limit midday exertion, and take breaks in shade or indoors.")
+    if current["temp"] <= 8 or today["temp_min"] <= 5:
+        concerns.append("Cold exposure may worsen discomfort for vulnerable people.")
+        tips.append("Keep warm, especially overnight, and check on older adults, infants, and people with chronic illness.")
+    if today["uv_max"] >= 8:
+        concerns.append("High UV exposure can cause sunburn and eye or skin damage.")
+        tips.append("Use shade, protective clothing, sunglasses, and sunscreen when outdoors.")
+    if today["wind_max"] >= 40:
+        concerns.append("Strong winds can increase dust exposure and aggravate breathing problems.")
+        tips.append("Avoid dusty outdoor areas and keep prescribed respiratory medicine available.")
+    if today["precip_prob"] >= 70 or current["humidity"] >= 85:
+        concerns.append("Wet or very humid conditions may increase discomfort and slip or mould exposure.")
+        tips.append("Wear suitable footwear, keep rooms ventilated, and avoid prolonged damp clothing.")
+    if aqi and aqi.get("value", 0) > 100:
+        concerns.append(f"Air pollution is elevated (AQI {aqi['value']}, {aqi['category']}).")
+        tips.append("Reduce prolonged outdoor exertion, avoid heavy traffic areas, and use a well-fitted mask if needed.")
+    if not concerns:
+        concerns.append("No major weather-related health stress signal is detected right now.")
+        tips.append("Stay hydrated, sleep well, eat regularly, and use normal sun and weather protection outdoors.")
+    return {
+        "concerns": concerns,
+        "tips": tips,
+        "disclaimer": "General prevention guidance, not a medical diagnosis. Seek professional care for severe or persistent symptoms.",
+        "standard": "Weather and AQI-based public-health guidance",
+    }
+
+
 def get_last_meta(messages: list) -> dict:
     for m in reversed(messages):
         if m.get("role") == "meta":
@@ -198,6 +232,7 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
     except Exception:
         logger.exception("AQI lookup failed for %s", location_obj.get("display_name"))
         aqi = None
+    health_advice = compute_health_advice(forecast, aqi, language)
     crop = compute_crop_advisory(forecast, language)
     risk = score_risk(
         month=date.today().month,
@@ -216,6 +251,7 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
         "crop_advisory": crop,
         "risk_index": risk,
         "aqi": aqi,
+        "health_advice": health_advice,
     }
 
 
@@ -281,6 +317,7 @@ def fallback_weather_bundle(location_obj: dict, language: str) -> dict:
         "crop_advisory": compute_crop_advisory(forecast, language),
         "risk_index": {"available": False, "message": "Using location-based fallback analysis while live data reconnects."},
         "aqi": None,
+        "health_advice": compute_health_advice(forecast, None, language),
         "data_source": "fallback analysis",
     }
 

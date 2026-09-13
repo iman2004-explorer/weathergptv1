@@ -218,19 +218,34 @@ function renderPanel(weatherData){
 
 function renderFarmerPanel(weatherData){
   const advisory = weatherData.crop_advisory;
-  if(!advisory) return;
+  const health = weatherData.health_advice;
+  if(!advisory && !health) return;
   const sub = document.getElementById('farmerSub');
-  if(sub) sub.textContent = `${advisory.season_label} · ${weatherData.place}`;
-  const cropsHtml = advisory.crops.map(c => `
+  if(sub) sub.textContent = advisory ? `${advisory.season_label} · ${weatherData.place}` : weatherData.place;
+  const cropsHtml = advisory ? advisory.crops.map(c => `
     <div class="crop-card">
       <h4>${c.name}</h4>
       <p>${c.care}</p>
-    </div>`).join('');
+    </div>`).join('') : '';
+  const healthHtml = health ? `
+    <section class="health-advice" aria-label="General health advice">
+      <div class="advice-section-head"><h3>Health Advice</h3><span>${health.standard}</span></div>
+      <ul class="health-list concerns">${health.concerns.map(item => `<li>${item}</li>`).join('')}</ul>
+      <h4>Simple prevention tips</h4>
+      <ul class="health-list tips">${health.tips.map(item => `<li>${item}</li>`).join('')}</ul>
+      <p class="health-disclaimer">${health.disclaimer}</p>
+    </section>` : '';
   const content = document.getElementById('farmerContent');
   if(content){
     content.innerHTML = `
-      <div class="crop-grid">${cropsHtml}</div>
-      <div class="farm-tip">💡 ${advisory.tip}</div>
+      <div class="advice-columns">
+        <section class="crop-advice">
+          <h3>Crop Advice</h3>
+          <div class="crop-grid">${cropsHtml}</div>
+          ${advisory ? `<div class="farm-tip">💡 ${advisory.tip}</div>` : ''}
+        </section>
+        ${healthHtml}
+      </div>
     `;
   }
 }
