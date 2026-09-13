@@ -239,6 +239,29 @@ async function callChat(text){
   return res.json();
 }
 
+function restoreOriginalPlace(data){
+  if(!data || !data.weather_data || messages.length < 3) return data;
+  const latest = messages[messages.length - 1];
+  const previousAssistant = [...messages].reverse().find(m => m.role === 'assistant');
+  if(!latest || latest.role !== 'user' || !previousAssistant ||
+     !/which state|which district/i.test(String(previousAssistant.content || ''))) return data;
+  const originalUser = [...messages].slice(0, -1).reverse().find(m => m.role === 'user');
+  const originalText = String(originalUser && originalUser.content || '');
+  const match = originalText.match(/\b(?:in|for|at|near)\s+([a-z][a-z\s-]{1,35})/i);
+  if(!match) return data;
+  const original = match[1].replace(/\b(right now|today|tomorrow|now|please)\b/gi, '').trim();
+  if(!original) return data;
+  const currentPlace = data.weather_data.place || '';
+  const state = data.weather_data.state;
+  const district = data.weather_data.district;
+  data.weather_data.place = [original.replace(/\b\w/g, c => c.toUpperCase()), district, state, 'India']
+    .filter((value, index, values) => value && values.indexOf(value) === index).join(', ');
+  if(data.reply_text && currentPlace){
+    data.reply_text = data.reply_text.replace(currentPlace, data.weather_data.place);
+  }
+  return data;
+}
+
 async function handleUserMessage(text){
   appendMessage('user', text);
   const sendBtn = document.getElementById('sendBtn');
@@ -249,6 +272,7 @@ async function handleUserMessage(text){
   try{
     const data = await callChat(text);
     messages = data.messages;
+    data = restoreOriginalPlace(data);
     hideTyping();
     appendMessage('ai', data.reply_text || '…');
     const engineDot = document.getElementById('engineDot');
