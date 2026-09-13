@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from .config import ALLOWED_ORIGINS, ANTHROPIC_API_KEY
 from .geocode_service import resolve_location
-from .weather_service import fetch_forecast, compute_advisories
+from .weather_service import fetch_forecast, fetch_wttr_forecast, compute_advisories
 from .crop_advisory import compute_crop_advisory
 from .ml_model import score_risk
 from .claude_service import call_claude
@@ -181,7 +181,13 @@ async def handle_local_chat(messages: list, language: str) -> dict:
 
 
 async def build_weather_bundle(location_obj: dict, language: str) -> dict:
-    forecast = await fetch_forecast(location_obj["latitude"], location_obj["longitude"])
+    try:
+        forecast = await fetch_forecast(location_obj["latitude"], location_obj["longitude"])
+        source = "live · Open-Meteo"
+    except Exception:
+        logger.exception("Open-Meteo failed for %s; trying wttr.in", location_obj.get("display_name"))
+        forecast = await fetch_wttr_forecast(location_obj.get("display_name") or "India")
+        source = "live · wttr.in fallback"
     advisories = compute_advisories(forecast)
     crop = compute_crop_advisory(forecast, language)
     risk = score_risk(
@@ -192,7 +198,7 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
     )
     return {
         "place": location_obj["display_name"],
-        "data_source": "live · Open-Meteo",
+        "data_source": source,
         "state": location_obj.get("state"),
         "district": location_obj.get("district"),
         "current": forecast["current"],

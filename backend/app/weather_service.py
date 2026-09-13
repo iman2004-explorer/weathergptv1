@@ -5,6 +5,8 @@ safely on the backend and is shared by both the chat tool and the plain
 REST endpoint.
 """
 import asyncio
+from datetime import date, timedelta
+from urllib.parse import quote
 import httpx
 from .config import OPEN_METEO_FORECAST_URL
 
@@ -33,6 +35,65 @@ def weather_label(code: int) -> str:
     if code in (95, 96, 99):
         return "Thunderstorm"
     return "Unsettled"
+
+
+def _wttr_code(description: str) -> int:
+    text = (description or "").lower()
+    if "thunder" in text or "storm" in text:
+        return 95
+    if "snow" in text or "sleet" in text or "ice" in text:
+        return 71
+    if "rain" in text or "shower" in text:
+        return 61
+    if "drizzle" in text:
+        return 51
+    if "fog" in text or "mist" in text:
+        return 45
+    if "cloud" in text or "overcast" in text:
+        return 3
+    return 0
+
+
+async def fetch_wttr_forecast(place: str) -> dict:
+    """Real provider fallback for hosts where Open-Meteo is unreachable."""
+    url = f"https://wttr.in/{quote(place)}?format=j1"
+    async with httpx.AsyncClient(timeout=25, trust_env=False, headers={"User-Agent": "WeatherGPT/1.0"}) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+    current_raw = data["current_condition"][0]
+    current_desc = current_raw.get("weatherDesc", [{"value": "Unknown"}])[0]["value"]
+    current = {
+        "temp": round(float(current_raw["temp_C"])),
+        "feels_like": round(float(current_raw["FeelsLikeC"])),
+        "humidity": int(current_raw["humidity"]),
+        "wind": round(float(current_raw["windspeedKmph"])),
+        "precip": float(current_raw.get("precipMM", 0) or 0),
+        "weather_code": _wttr_code(current_desc),
+        "weather_label": current_desc,
+    }
+    days = []
+    start = date.today()
+    for offset, raw_day in enumerate(data.get("weather", [])[:7]):
+        hourly = raw_day.get("hourly", [])
+        midday = min(hourly, key=lambda hour: abs(int(hour.get("time", "1200")) - 1200)) if hourly else {}
+        description = (midday.get("weatherDesc") or [{"value": current_desc}])[0]["value"]
+        rain_values = [int(hour.get("chanceofrain", 0) or 0) for hour in hourly]
+        wind_values = [float(hour.get("windspeedKmph", 0) or 0) for hour in hourly]
+        days.append({
+            "date": raw_day.get("date") or (start + timedelta(days=offset)).isoformat(),
+            "weather_code": _wttr_code(description),
+            "weather_label": description,
+            "temp_max": round(float(raw_day["maxtempC"])),
+            "temp_min": round(float(raw_day["mintempC"])),
+            "precip_prob": max(rain_values or [0]),
+            "wind_max": round(max(wind_values or [0])),
+            "uv_max": float(raw_day.get("uvIndex", 0) or 0),
+        })
+    if not days:
+        raise ValueError("wttr.in returned no forecast days")
+    return {"current": current, "days": days, "timezone": "local"}
 
 
 async def fetch_forecast(lat: float, lon: float) -> dict:
