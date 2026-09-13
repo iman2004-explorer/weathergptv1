@@ -270,7 +270,7 @@ async function handleUserMessage(text){
   showTyping();
 
   try{
-    const data = await callChat(text);
+    let data = await callChat(text);
     messages = data.messages;
     data = restoreOriginalPlace(data);
     hideTyping();
