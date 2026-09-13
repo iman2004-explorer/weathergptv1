@@ -137,6 +137,16 @@ async def handle_local_chat(messages: list, language: str) -> dict:
     if resolution is not None:
         if resolution.status == "resolved":
             weather_bundle = await build_weather_bundle(resolution.data["location"], language)
+            if pending and pending.get("query"):
+                location_obj = resolution.data["location"]
+                weather_bundle["place"] = ", ".join(
+                    value for value in [
+                        pending["query"].title(),
+                        location_obj.get("district"),
+                        location_obj.get("state"),
+                        location_obj.get("country"),
+                    ] if value
+                )
             new_meta["last_location"] = {"query": weather_bundle["place"]}
             reply_text = local_nlu.generate_reply(intent, weather_bundle, language)
         elif resolution.status == "not_found":
