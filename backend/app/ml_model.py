@@ -27,8 +27,10 @@ def score_risk(month: int, latitude: float, day: dict, humidity: float) -> dict:
     """day: one entry from weather_service.fetch_forecast()['days']"""
     try:
         model, meta = _load()
-    except FileNotFoundError:
-        return {"available": False, "message": "Model not trained yet. Run backend/models/train_synthetic_baseline.py"}
+    except Exception as exc:
+        # The deterministic weather/advisory response must remain available
+        # if a hosted runtime cannot load the optional model artifact.
+        return {"available": False, "message": f"Risk model unavailable: {type(exc).__name__}"}
 
     features = np.array([[
         month,
