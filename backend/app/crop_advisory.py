@@ -46,6 +46,66 @@ CROP_DB = {
     ],
 }
 
+REGIONAL_CROPS = {
+    "laterite": [
+        {"en": {"name": "Paddy (aman)", "care": "Use a short-duration variety where water is uncertain; keep bunds intact and drain excess water after heavy rain."}},
+        {"en": {"name": "Groundnut", "care": "Choose light, well-drained soil; use seed treatment and avoid waterlogging during pegging."}},
+        {"en": {"name": "Sesame", "care": "Sow on a fine, well-drained seedbed; thin crowded plants and avoid excess nitrogen."}},
+    ],
+    "alluvial": [
+        {"en": {"name": "Paddy (aman)", "care": "Maintain shallow standing water after transplanting; split nitrogen and monitor stem borer and blast."}},
+        {"en": {"name": "Potato", "care": "Use certified seed, ridge the crop, and ensure drainage; stop irrigation before harvest."}},
+        {"en": {"name": "Jute", "care": "Sow in fertile moist soil, weed early, and rett fibre only in clean, suitable water."}},
+    ],
+    "north_hills": [
+        {"en": {"name": "Tea", "care": "Maintain shade and drainage, mulch the root zone, and scout flushes regularly for pests."}},
+        {"en": {"name": "Large cardamom", "care": "Keep partial shade, remove diseased clumps, and avoid stagnant water around rhizomes."}},
+        {"en": {"name": "Ginger", "care": "Use clean rhizomes, raised beds, mulch, and strict drainage to reduce rhizome rot."}},
+    ],
+    "coastal": [
+        {"en": {"name": "Salt-tolerant paddy", "care": "Use locally recommended tolerant varieties, protect field bunds, and drain standing storm water promptly."}},
+        {"en": {"name": "Sesame", "care": "Sow on raised, well-drained beds after the main rain spell and avoid waterlogging."}},
+        {"en": {"name": "Vegetables", "care": "Use raised beds, trellising where needed, and clean water; harvest frequently during humid weather."}},
+    ],
+}
+
+REGION_LABELS = {
+    "laterite": "Bankura–Purulia–Jhargram laterite belt",
+    "alluvial": "Gangetic alluvial plains",
+    "north_hills": "Darjeeling–Kalimpong hill zone",
+    "coastal": "South Bengal coastal and delta zone",
+}
+
+
+def _region(location: dict | None) -> str:
+    text = " ".join(str(location.get(key, "")) for key in ("display_name", "state", "district")).lower()
+    if any(name in text for name in ("darjeeling", "kalimpong")):
+        return "north_hills"
+    if any(name in text for name in ("south 24", "north 24", "parganas", "medinipur", "midnapur", "howrah")):
+        return "coastal"
+    if any(name in text for name in ("bankura", "purulia", "jhargram")):
+        return "laterite"
+    return "alluvial"
+
+
+def _localized_region_crops(region: str, lang: str) -> list[dict]:
+    crops = REGIONAL_CROPS[region]
+    return [{"name": crop["en"]["name"], "care": crop["en"]["care"]} for crop in crops]
+
+
+def _disease_risks(weather_data: dict, region: str) -> list[str]:
+    today = (weather_data.get("days") or [{}])[0]
+    risks = []
+    if today.get("precip_prob", 0) >= 70 or weather_data.get("current", {}).get("humidity", 0) >= 85:
+        risks.append("High humidity/rain: monitor rice blast, sheath blight, leaf spot, fruit rot, and fungal disease; improve airflow and avoid late-evening irrigation.")
+    if today.get("temp_max", 30) >= 32 and today.get("precip_prob", 0) >= 50:
+        risks.append("Warm wet weather: scout for stem borers, aphids, whiteflies, and caterpillars; use field sanitation and integrated pest management before spraying.")
+    if region == "north_hills" and (today.get("precip_prob", 0) >= 60 or weather_data.get("current", {}).get("humidity", 0) >= 80):
+        risks.append("Hill crops: watch ginger/cardamom rhizome rot and tea fungal leaf disease; use raised drainage and remove infected material.")
+    if region == "laterite" and today.get("temp_max", 30) >= 35:
+        risks.append("Hot laterite fields: watch for mite and sucking-pest pressure; mulch, irrigate at the root zone, and inspect leaf undersides.")
+    return risks or ["No major weather-triggered crop disease signal detected; continue routine scouting twice each week."]
+
 
 def get_season(month: int) -> str:
     """month: 1=Jan..12=Dec"""
@@ -56,11 +116,12 @@ def get_season(month: int) -> str:
     return "zaid"          # Mar-May
 
 
-def compute_crop_advisory(weather_data: dict, lang: str = "en") -> dict:
+def compute_crop_advisory(weather_data: dict, lang: str = "en", location: dict | None = None) -> dict:
     month = date.today().month
     season = get_season(month)
     today = (weather_data.get("days") or [{}])[0]
-    crops = CROP_DB[season]
+    region = _region(location)
+    crops = REGIONAL_CROPS.get(region, CROP_DB[season])
 
     tip = None
     precip = today.get("precip_prob", 0)
@@ -88,8 +149,9 @@ def compute_crop_advisory(weather_data: dict, lang: str = "en") -> dict:
         "season": season,
         "season_label": SEASON_LABELS[season][lang],
         "tip": tip,
-        "crops": [
-            {"name": c[lang]["name"], "care": c[lang]["care"]}
-            for c in crops
+        "region": REGION_LABELS.get(region, "Local growing zone"),
+        "crops": _localized_region_crops(region, lang) if region in REGIONAL_CROPS else [
+            {"name": c[lang]["name"], "care": c[lang]["care"]} for c in crops
         ],
+        "disease_risks": _disease_risks(weather_data, region),
     }

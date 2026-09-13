@@ -92,6 +92,7 @@
   .health-list.concerns li{background:rgba(232,163,61,.10);border:1px solid rgba(232,163,61,.25);color:#F4D59B;}
   .health-list.tips li{background:rgba(79,182,199,.09);border:1px solid rgba(79,182,199,.22);color:var(--text);}
   .health-advice h4{font-size:11px;color:var(--text-dim);margin:13px 0 7px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
+  .disease-risks{margin-top:13px;padding:10px 12px;border:1px solid rgba(232,96,76,.25);background:rgba(232,96,76,.08);border-radius:8px;}.disease-risks h4{margin:0 0 7px;font-size:11px;color:#FFAA99;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}.disease-risks ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}.disease-risks li{font-size:12px;line-height:1.4;color:#F9D8D2;}
   .health-disclaimer{font-size:10px;line-height:1.4;color:var(--text-dim);margin:12px 0 0;}
   @media (max-width:700px){.advice-columns{grid-template-columns:1fr;}.health-advice{padding-left:0;border-left:0;border-top:1px solid var(--line);padding-top:16px;}}
 

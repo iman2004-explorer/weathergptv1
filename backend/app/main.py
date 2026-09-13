@@ -236,7 +236,7 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
         logger.exception("AQI lookup failed for %s", location_obj.get("display_name"))
         aqi = None
     health_advice = compute_health_advice(forecast, aqi, language)
-    crop = compute_crop_advisory(forecast, language)
+    crop = compute_crop_advisory(forecast, language, location_obj)
     risk = score_risk(
         month=date.today().month,
         latitude=location_obj["latitude"],
@@ -317,7 +317,7 @@ def fallback_weather_bundle(location_obj: dict, language: str) -> dict:
         "current": forecast["current"],
         "days": days,
         "advisories": localize_advisories(advisories, language),
-        "crop_advisory": compute_crop_advisory(forecast, language),
+        "crop_advisory": compute_crop_advisory(forecast, language, location_obj),
         "risk_index": {"available": False, "message": "Using location-based fallback analysis while live data reconnects."},
         "aqi": None,
         "health_advice": compute_health_advice(forecast, None, language),

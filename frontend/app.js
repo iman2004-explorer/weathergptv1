@@ -221,7 +221,7 @@ function renderFarmerPanel(weatherData){
   const health = weatherData.health_advice;
   if(!advisory && !health) return;
   const sub = document.getElementById('farmerSub');
-  if(sub) sub.textContent = advisory ? `${advisory.season_label} · ${weatherData.place}` : weatherData.place;
+  if(sub) sub.textContent = advisory ? `${advisory.region || advisory.season_label} · ${weatherData.place}` : weatherData.place;
   const cropsHtml = advisory ? advisory.crops.map(c => `
     <div class="crop-card">
       <h4>${c.name}</h4>
@@ -243,6 +243,7 @@ function renderFarmerPanel(weatherData){
           <h3>Crop Advice</h3>
           <div class="crop-grid">${cropsHtml}</div>
           ${advisory ? `<div class="farm-tip">💡 ${advisory.tip}</div>` : ''}
+          ${advisory && advisory.disease_risks ? `<div class="disease-risks"><h4>Likely disease and pest risks</h4><ul>${advisory.disease_risks.map(risk => `<li>${risk}</li>`).join('')}</ul></div>` : ''}
         </section>
         ${healthHtml}
       </div>
