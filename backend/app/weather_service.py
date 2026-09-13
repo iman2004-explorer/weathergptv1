@@ -8,7 +8,7 @@ import asyncio
 from datetime import date, timedelta
 from urllib.parse import quote
 import httpx
-from .config import OPEN_METEO_FORECAST_URL
+from .config import OPEN_METEO_AIR_QUALITY_URL, OPEN_METEO_FORECAST_URL
 
 WEATHER_LABELS = {
     0: "Clear sky",
@@ -147,6 +147,46 @@ async def fetch_forecast(lat: float, lon: float) -> dict:
     }
 
     return {"current": current, "days": days, "timezone": data.get("timezone")}
+
+
+def classify_aqi(value: float) -> dict:
+    """Classify the US AQI scale with concise public-health language."""
+    aqi = round(float(value))
+    if aqi <= 50:
+        return {"value": aqi, "category": "Healthy", "level": "healthy", "color": "#35C48D", "advice": "Air quality is good for normal outdoor activity."}
+    if aqi <= 100:
+        return {"value": aqi, "category": "Moderate", "level": "moderate", "color": "#E8C547", "advice": "Most people can enjoy outdoor activity; unusually sensitive people should take care."}
+    if aqi <= 150:
+        return {"value": aqi, "category": "Poor", "level": "poor", "color": "#F29A38", "advice": "Sensitive groups should reduce prolonged or heavy outdoor exertion."}
+    if aqi <= 200:
+        return {"value": aqi, "category": "Poor", "level": "poor", "color": "#E8604C", "advice": "Consider reducing prolonged outdoor exertion, especially for sensitive groups."}
+    if aqi <= 300:
+        return {"value": aqi, "category": "Very Poor", "level": "very-poor", "color": "#A85BC7", "advice": "Avoid prolonged outdoor exertion; sensitive groups should stay indoors where possible."}
+    return {"value": aqi, "category": "Severe", "level": "severe", "color": "#8F294A", "advice": "Avoid outdoor activity and keep windows closed when practical."}
+
+
+async def fetch_aqi(lat: float, lon: float) -> dict:
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "current": "us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide",
+        "timezone": "auto",
+    }
+    async with httpx.AsyncClient(timeout=20, trust_env=False) as client:
+        response = await client.get(OPEN_METEO_AIR_QUALITY_URL, params=params)
+        response.raise_for_status()
+        current = response.json().get("current", {})
+    value = current.get("us_aqi")
+    if value is None:
+        raise ValueError("AQI value was not returned")
+    result = classify_aqi(value)
+    result.update({
+        "pm2_5": current.get("pm2_5"),
+        "pm10": current.get("pm10"),
+        "ozone": current.get("ozone"),
+        "source": "Open-Meteo Air Quality",
+    })
+    return result
 
 
 ADVISORY_TEXT = {

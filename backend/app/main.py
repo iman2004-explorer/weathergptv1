@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from .config import ALLOWED_ORIGINS, ANTHROPIC_API_KEY
 from .geocode_service import resolve_location
-from .weather_service import fetch_forecast, fetch_wttr_forecast, compute_advisories
+from .weather_service import fetch_aqi, fetch_forecast, fetch_wttr_forecast, compute_advisories
 from .crop_advisory import compute_crop_advisory
 from .ml_model import score_risk
 from .claude_service import call_claude
@@ -193,6 +193,11 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
         )
         source = "live · wttr.in fallback"
     advisories = compute_advisories(forecast)
+    try:
+        aqi = await fetch_aqi(location_obj["latitude"], location_obj["longitude"])
+    except Exception:
+        logger.exception("AQI lookup failed for %s", location_obj.get("display_name"))
+        aqi = None
     crop = compute_crop_advisory(forecast, language)
     risk = score_risk(
         month=date.today().month,
@@ -210,6 +215,7 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
         "advisories": localize_advisories(advisories, language),
         "crop_advisory": crop,
         "risk_index": risk,
+        "aqi": aqi,
     }
 
 
@@ -274,6 +280,7 @@ def fallback_weather_bundle(location_obj: dict, language: str) -> dict:
         "advisories": localize_advisories(advisories, language),
         "crop_advisory": compute_crop_advisory(forecast, language),
         "risk_index": {"available": False, "message": "Using location-based fallback analysis while live data reconnects."},
+        "aqi": None,
         "data_source": "fallback analysis",
     }
 

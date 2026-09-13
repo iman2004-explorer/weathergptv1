@@ -116,6 +116,15 @@ function renderPanel(weatherData){
   const today = weatherData.days[0];
   const advisories = weatherData.advisories || [];
   const scene = weatherScene(c.weather_code);
+  const aqi = weatherData.aqi;
+  const aqiHtml = aqi ? `
+    <div class="aqi-card aqi-${aqi.level}" style="--aqi-color:${aqi.color}">
+      <div class="aqi-heading"><span class="aqi-dot"></span><span>Air Quality Index</span><strong>${aqi.value}</strong></div>
+      <div class="aqi-category">${aqi.category}</div>
+      <div class="aqi-advice">${aqi.advice}</div>
+      <div class="aqi-pollutants">PM2.5 ${aqi.pm2_5 ?? '—'} · PM10 ${aqi.pm10 ?? '—'} · ${aqi.source}</div>
+    </div>` : `
+    <div class="aqi-card aqi-unavailable"><div class="aqi-heading"><span class="aqi-dot"></span><span>Air Quality Index</span><strong>—</strong></div><div class="aqi-advice">AQI data is temporarily unavailable.</div></div>`;
 
   const temps = weatherData.days.map(d=>d.temp_max);
   const min = Math.min(...temps), max = Math.max(...temps);
@@ -151,6 +160,7 @@ function renderPanel(weatherData){
       <div class="scene-sky"><span class="scene-sun"></span><span class="scene-cloud"></span><span class="scene-particles">${scene.particles}</span><span class="scene-bolt"></span></div>
       <div class="scene-caption"><strong>${c.weather_label}</strong><span>Current conditions in ${weatherData.place}</span><em>${weatherData.data_source || 'live · Open-Meteo'}</em></div>
     </div>
+    ${aqiHtml}
     <div class="reading-strip">
       <div class="reading"><div class="val">${c.temp}°</div><div class="lbl">${language==='hi'?'तापमान':'temp'}</div></div>
       <div class="reading"><div class="val">${c.feels_like}°</div><div class="lbl">${language==='hi'?'महसूस':'feels'}</div></div>
