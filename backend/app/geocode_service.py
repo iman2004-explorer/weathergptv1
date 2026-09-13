@@ -53,6 +53,19 @@ def _candidate(r: dict) -> dict:
     }
 
 
+def _display_with_original_query(candidate: dict, query: str) -> dict:
+    original = query.strip()
+    if not original:
+        return candidate
+    candidate = {**candidate}
+    parts = [original.title()]
+    for value in [candidate.get("district"), candidate.get("state"), candidate.get("country")]:
+        if value and value not in parts:
+            parts.append(value)
+    candidate["display_name"] = ", ".join(parts)
+    return candidate
+
+
 async def _raw_search(query: str, count: int = 20) -> list[dict]:
     params = {"name": query, "count": count, "language": "en", "format": "json"}
     last_error = None
@@ -131,7 +144,7 @@ async def resolve_location(
         pool = [c for c in pool if c["district"] and district_lower in c["district"].lower()] or pool
 
     if len(pool) == 1:
-        return LocationResolution("resolved", location=pool[0])
+        return LocationResolution("resolved", location=_display_with_original_query(pool[0], query))
 
     if len(pool) == 0:
         return LocationResolution("not_found", message=f'No place found matching "{query}" with the given state/district.')
