@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import date
 from pathlib import Path
 from typing import Optional
@@ -15,6 +16,8 @@ from .crop_advisory import compute_crop_advisory
 from .ml_model import score_risk
 from .claude_service import call_claude
 from . import local_nlu
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="WeatherGPT API")
 
@@ -183,10 +186,24 @@ async def weather(req: WeatherRequest):
     """Resolve a location and return live weather + advisories + crop advice
     + ML risk index in one call. Returns a disambiguation payload instead if
     the place name is ambiguous."""
-    resolution = await resolve_location(req.location, req.state, req.district)
+    try:
+        resolution = await resolve_location(req.location, req.state, req.district)
+    except Exception:
+        logger.exception("Weather lookup failed for %s", req.location)
+        return {
+            "status": "unavailable",
+            "message": "Live weather data is temporarily unavailable. Please try again shortly.",
+        }
     if resolution.status != "resolved":
         return resolution.to_dict()
-    bundle = await build_weather_bundle(resolution.data["location"], req.language)
+    try:
+        bundle = await build_weather_bundle(resolution.data["location"], req.language)
+    except Exception:
+        logger.exception("Forecast build failed for %s", req.location)
+        return {
+            "status": "unavailable",
+            "message": "Live weather data is temporarily unavailable. Please try again shortly.",
+        }
     return {"status": "resolved", **bundle}
 
 
@@ -207,7 +224,19 @@ async def chat(req: ChatRequest):
     # Zero-setup mode: no key configured yet -> use the local rule-based
     # engine so the app is fully usable without any signup step.
     if not ANTHROPIC_API_KEY:
-        return await handle_local_chat(messages, req.language)
+        try:
+            return await handle_local_chat(messages, req.language)
+        except Exception:
+            logger.exception("Local chat failed")
+            reply_text = "I could not reach the live weather service right now. Please try again shortly."
+            messages.append({"role": "assistant", "content": reply_text})
+            return {
+                "messages": messages,
+                "reply_text": reply_text,
+                "weather_data": None,
+                "disambiguation": None,
+                "engine": "local",
+            }
 
     weather_bundle_for_ui = None
     disambiguation_for_ui = None
