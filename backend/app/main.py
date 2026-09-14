@@ -16,6 +16,7 @@ from .weather_service import fetch_aqi, fetch_forecast, fetch_wttr_forecast, com
 from .crop_advisory import compute_crop_advisory
 from .ml_model import score_risk
 from .claude_service import call_claude
+from .wellbeing_advisory import compute_activity_advice, compute_hydration_advice
 from . import local_nlu
 
 logger = logging.getLogger(__name__)
@@ -236,6 +237,8 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
         logger.exception("AQI lookup failed for %s", location_obj.get("display_name"))
         aqi = None
     health_advice = compute_health_advice(forecast, aqi, language)
+    health_advice["hydration"] = compute_hydration_advice(forecast, aqi, location_obj)
+    activities = compute_activity_advice(forecast, aqi, location_obj)
     crop = compute_crop_advisory(forecast, language, location_obj)
     risk = score_risk(
         month=date.today().month,
@@ -255,6 +258,7 @@ async def build_weather_bundle(location_obj: dict, language: str) -> dict:
         "risk_index": risk,
         "aqi": aqi,
         "health_advice": health_advice,
+        "activities": activities,
     }
 
 
@@ -310,6 +314,8 @@ def fallback_weather_bundle(location_obj: dict, language: str) -> dict:
         "days": days,
     }
     advisories = compute_advisories(forecast)
+    health_advice = compute_health_advice(forecast, None, language)
+    health_advice["hydration"] = compute_hydration_advice(forecast, None, location_obj)
     return {
         "place": location_obj["display_name"],
         "state": location_obj.get("state"),
@@ -320,7 +326,8 @@ def fallback_weather_bundle(location_obj: dict, language: str) -> dict:
         "crop_advisory": compute_crop_advisory(forecast, language, location_obj),
         "risk_index": {"available": False, "message": "Using location-based fallback analysis while live data reconnects."},
         "aqi": None,
-        "health_advice": compute_health_advice(forecast, None, language),
+        "health_advice": health_advice,
+        "activities": compute_activity_advice(forecast, None, location_obj),
         "data_source": "fallback analysis",
     }
 

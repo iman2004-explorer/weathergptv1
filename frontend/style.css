@@ -75,9 +75,21 @@
   .farmer-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;flex-wrap:wrap;gap:6px;}
   .farmer-head h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin:0;}
   .farmer-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .activities-advice{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--line);}
+  .activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;}
+  .activity-card{display:flex;gap:10px;min-width:0;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg-panel-2);}
+  .activity-card.is-suitable{border-color:rgba(79,182,199,.4);background:rgba(79,182,199,.08);}
+  .activity-card.is-limited{border-color:rgba(232,163,61,.24);}
+  .activity-icon{font-size:24px;line-height:1;flex:0 0 28px;text-align:center;}
+  .activity-copy{min-width:0;}
+  .activity-copy h4{margin:0;font:600 13px 'Space Grotesk',sans-serif;color:var(--text);}
+  .activity-status{display:block;margin-top:2px;font:10px 'IBM Plex Mono',monospace;color:var(--teal);}
+  .is-limited .activity-status{color:var(--amber);}
+  .activity-copy p{margin:6px 0 0;color:var(--text-dim);font-size:11.5px;line-height:1.4;}
   .crop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px;}
   .crop-card{background:var(--bg-panel-2);border:1px solid var(--line);border-radius:8px;padding:12px 13px;}
-  .crop-card h4{margin:0 0 6px;font-size:14px;font-weight:600;font-family:'Space Grotesk',sans-serif;color:var(--teal);}
+  .crop-card h4{display:flex;align-items:center;gap:7px;margin:0 0 6px;font-size:14px;font-weight:600;font-family:'Space Grotesk',sans-serif;color:var(--teal);}
+  .crop-icon{font-size:20px;line-height:1;}
   .crop-card p{margin:0;font-size:12.5px;line-height:1.5;color:var(--text-dim);}
   .farm-tip{font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:8px;background:rgba(79,182,199,0.10);border:1px solid rgba(79,182,199,0.28);color:var(--text);}
   .advice-columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
@@ -92,6 +104,9 @@
   .health-list.concerns li{background:rgba(232,163,61,.10);border:1px solid rgba(232,163,61,.25);color:#F4D59B;}
   .health-list.tips li{background:rgba(79,182,199,.09);border:1px solid rgba(79,182,199,.22);color:var(--text);}
   .health-advice h4{font-size:11px;color:var(--text-dim);margin:13px 0 7px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
+  .hydration-block{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);}
+  .water-target{margin:4px 0 9px;color:var(--teal);font:600 22px 'Space Grotesk',sans-serif;}
+  .water-target small{font:11px 'IBM Plex Mono',monospace;color:var(--text-dim);font-weight:400;}
   .disease-risks{margin-top:13px;padding:10px 12px;border:1px solid rgba(232,96,76,.25);background:rgba(232,96,76,.08);border-radius:8px;}.disease-risks h4{margin:0 0 7px;font-size:11px;color:#FFAA99;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}.disease-risks ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}.disease-risks li{font-size:12px;line-height:1.4;color:#F9D8D2;}
   .health-disclaimer{font-size:10px;line-height:1.4;color:var(--text-dim);margin:12px 0 0;}
   @media (max-width:700px){.advice-columns{grid-template-columns:1fr;}.health-advice{padding-left:0;border-left:0;border-top:1px solid var(--line);padding-top:16px;}}

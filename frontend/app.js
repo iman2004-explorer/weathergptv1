@@ -219,12 +219,23 @@ function renderPanel(weatherData){
 function renderFarmerPanel(weatherData){
   const advisory = weatherData.crop_advisory;
   const health = weatherData.health_advice;
-  if(!advisory && !health) return;
-  const sub = document.getElementById('farmerSub');
-  if(sub) sub.textContent = advisory ? `${advisory.region || advisory.season_label} · ${weatherData.place}` : weatherData.place;
+  const activities = weatherData.activities;
+  if(!advisory && !health && !activities) return;
+  const cropEmoji = (name) => {
+    const crop = String(name || '').toLowerCase();
+    if(crop.includes('paddy') || crop.includes('rice')) return '🌾';
+    if(crop.includes('potato')) return '🥔';
+    if(crop.includes('jute')) return '🧵';
+    if(crop.includes('tea')) return '🍵';
+    if(crop.includes('ginger')) return '🫚';
+    if(crop.includes('cardamom')) return '🌿';
+    if(crop.includes('sesame')) return '🌱';
+    if(crop.includes('vegetable')) return '🥬';
+    return '🌱';
+  };
   const cropsHtml = advisory ? advisory.crops.map(c => `
     <div class="crop-card">
-      <h4>${c.name}</h4>
+      <h4><span class="crop-icon" aria-hidden="true">${cropEmoji(c.name)}</span>${c.name}</h4>
       <p>${c.care}</p>
     </div>`).join('') : '';
   const healthHtml = health ? `
@@ -233,11 +244,31 @@ function renderFarmerPanel(weatherData){
       <ul class="health-list concerns">${health.concerns.map(item => `<li>${item}</li>`).join('')}</ul>
       <h4>Simple prevention tips</h4>
       <ul class="health-list tips">${health.tips.map(item => `<li>${item}</li>`).join('')}</ul>
-      <p class="health-disclaimer">${health.disclaimer}</p>
+      ${health.hydration ? `
+        <div class="hydration-block">
+          <div class="advice-section-head"><h3>💧 Water guidance</h3><span>${health.hydration.standard}</span></div>
+          <div class="water-target">${health.hydration.daily_beverage_target_litres.low}-${health.hydration.daily_beverage_target_litres.high} L <small>beverages today</small></div>
+          <ul class="health-list tips">${health.hydration.guidance.map(item => `<li>${item}</li>`).join('')}</ul>
+        </div>` : ''}
+      <p class="health-disclaimer">${health.disclaimer}${health.hydration ? ` ${health.hydration.disclaimer}` : ''}</p>
+    </section>` : '';
+  const activitiesHtml = activities ? `
+    <section class="activities-advice" aria-label="Weather-suitable activities">
+      <div class="advice-section-head"><h3>Activities</h3><span>${activities.standard} · ${activities.location_analysis.place || weatherData.place}</span></div>
+      <div class="activity-grid">${activities.activities.map(activity => `
+        <article class="activity-card ${activity.suitable ? 'is-suitable' : 'is-limited'}">
+          <div class="activity-icon" aria-hidden="true">${activity.icon}</div>
+          <div class="activity-copy"><h4>${activity.name}</h4><span class="activity-status">${activity.suitable ? 'Suitable now' : 'Use caution'}</span><p>${activity.reason}</p></div>
+        </article>`).join('')}</div>
     </section>` : '';
   const content = document.getElementById('farmerContent');
   if(content){
     content.innerHTML = `
+      ${activitiesHtml}
+      <div class="farmer-head">
+        <h2>🌾 Farmer Advisory</h2>
+        <span class="farmer-sub">${advisory ? `${advisory.region || advisory.season_label} · ${weatherData.place}` : weatherData.place}</span>
+      </div>
       <div class="advice-columns">
         <section class="crop-advice">
           <h3>Crop Advice</h3>

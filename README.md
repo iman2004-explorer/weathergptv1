@@ -50,6 +50,7 @@ weathergpt/
 │   │   ├── geocode_service.py Location resolution + state/district disambiguation
 │   │   ├── weather_service.py Open-Meteo forecast fetch + hazard advisory rules
 │   │   ├── crop_advisory.py   Farmer advisory (season + crop + care, 3 languages)
+│   │   ├── wellbeing_advisory.py Location-aware activities + guideline-based hydration
 │   │   ├── ml_model.py        Loads the trained risk model for scoring
 │   │   └── config.py          Env var loading
 │   ├── models/
@@ -134,6 +135,7 @@ but a real static server avoids some browsers' `fetch` restrictions on
 | Weather data | Real, live (Open-Meteo) | Real, live (Open-Meteo) |
 | Location disambiguation | Full state → district flow | Full state → district flow |
 | Farmer/crop advisory | Full, multilingual | Full, multilingual |
+| Activities + hydration | Location/weather/AQI aware | Location/weather/AQI aware |
 | Conversation quality | Template replies, single-turn | Natural, holds context, handles phrasing you didn't anticipate |
 | Cost | Free | Anthropic API usage cost |
 
